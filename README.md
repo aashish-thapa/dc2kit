@@ -17,6 +17,8 @@ The output is a v3 **workload** kit, made of a descriptor (`<name>.yaml`) and it
 
 ## Install
 
+Download a binary for Linux, macOS or Windows from [Releases](https://github.com/aashish-thapa/dc2kit/releases), or:
+
 ```console
 go install github.com/aashish-thapa/dc2kit/cmd/dc2kit@latest
 ```
@@ -53,6 +55,20 @@ Two sandbox rules shape the output and are easy to miss when writing a kit by ha
 - **Hooks see only declared variables.** `lifecycle@1` hides every env var a hook does not list, except PATH and HOME. A devcontainer command can see the whole container environment, so dc2kit lists every image-level name (a feature's `NVM_DIR`, your `containerEnv`) on each hook.
 - **Egress is deny-by-default.** Devcontainers declare no network policy, so the runtime allow-list is built from presets for the installed toolchains (npm, PyPI, Go proxy, crates.io, Maven, Docker Hub, GitHub, distro mirrors), plus any `--allow` hosts. During the install phase, while setup commands run, egress is open by default. That phase closes before the agent starts; use `--install-egress=presets` to narrow it.
 
+## GitHub Action
+
+Keep a committed kit in step with `devcontainer.json`. With `check: true` the job fails when regenerating would change the kit, for example after someone edits the devcontainer or a feature publishes a new digest:
+
+```yaml
+- uses: actions/checkout@v7
+- uses: aashish-thapa/dc2kit@v0
+  with:
+    args: -o sbx-kit
+    check: true
+```
+
+Inputs: `path` (default `.`), `args`, `check` (default `false`), `version` (a release tag, default `latest`). Runs on Linux and macOS runners.
+
 ## Flags
 
 ```
@@ -63,6 +79,7 @@ Two sandbox rules shape the output and are easy to miss when writing a kit by ha
 --install-egress M   open (default) or presets
 --source-url URL     sourceUrl recorded in the descriptor
 --force              regenerate a directory dc2kit created earlier
+--version            print the version
 ```
 
 `--force` only replaces a directory that carries dc2kit's `.dc2kit` marker file.

@@ -1,0 +1,71 @@
+name: dc2kit
+description: Convert devcontainer.json into a Docker Sandboxes kit, or check that the committed kit is up to date
+branding:
+  icon: box
+  color: blue
+
+inputs:
+  path:
+    description: devcontainer.json, or the project directory that holds it
+    default: .
+  args:
+    description: extra dc2kit flags, such as "-o sbx-kit --allow api.example.com"
+    default: ""
+  check:
+    description: when "true", fail if regenerating changes the committed kit
+    default: "false"
+  version:
+    description: dc2kit release tag to install, or "latest"
+    default: latest
+
+runs:
+  using: composite
+  steps:
+    - name: install dc2kit
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        VERSION: ${{ inputs.version }}
+        RUNNER_OS_NAME: ${{ runner.os }}
+        RUNNER_ARCH_NAME: ${{ runner.arch }}
+      run: |
+        set -euo pipefail
+        case "$RUNNER_OS_NAME" in
+          Linux) os=linux ;;
+          macOS) os=darwin ;;
+          *) echo "dc2kit action supports Linux and macOS runners" >&2; exit 1 ;;
+        esac
+        case "$RUNNER_ARCH_NAME" in
+          X64) arch=amd64 ;;
+          ARM64) arch=arm64 ;;
+          *) echo "unsupported runner architecture $RUNNER_ARCH_NAME" >&2; exit 1 ;;
+        esac
+        dir="$RUNNER_TEMP/dc2kit"
+        mkdir -p "$dir"
+        # gh picks the latest release when no tag is given.
+        if [ "$VERSION" = latest ]; then set --; else set -- "$VERSION"; fi
+        gh release download "$@" --repo aashish-thapa/dc2kit \
+          --pattern "dc2kit_*_${os}_${arch}.tar.gz" --dir "$dir" --clobber
+        tar -xzf "$dir"/dc2kit_*.tar.gz -C "$dir" dc2kit
+        echo "$dir" >> "$GITHUB_PATH"
+
+    - name: run dc2kit
+      shell: bash
+      env:
+        TARGET: ${{ inputs.path }}
+        ARGS: ${{ inputs.args }}
+        CHECK: ${{ inputs.check }}
+      run: |
+        set -euo pipefail
+        dc2kit --version
+        # ARGS is split on whitespace on purpose: it carries several flags.
+        # shellcheck disable=SC2086
+        dc2kit --force $ARGS "$TARGET"
+        if [ "$CHECK" = true ]; then
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            git --no-pager diff
+            echo "::error::the committed kit is stale; rerun: dc2kit --force $ARGS $TARGET" >&2
+            exit 1
+          fi
+        fi

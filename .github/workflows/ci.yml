@@ -36,3 +36,19 @@ jobs:
           driver: docker-container
       - name: build kits, check conformance, run in-image checks
         run: scripts/e2e.sh
+
+  action:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - name: convert a fixture with the published release
+        uses: ./
+        with:
+          path: testdata/e2e/alpine
+          args: -o ${{ runner.temp }}/kit
+      - name: kit was written
+        shell: bash
+        run: test -f "$RUNNER_TEMP/kit/.dc2kit"
