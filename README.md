@@ -18,12 +18,10 @@ The output is a v3 **workload** kit, made of a descriptor (`<name>.yaml`) and it
 ## Install
 
 ```console
-git clone https://github.com/aashish-thapa/dc2kit && cd dc2kit
-git clone --branch v3.0.0-m.9 https://github.com/docker/sandbox-kit-spec ../sandbox-kit-spec
-go install ./cmd/dc2kit
+go install github.com/aashish-thapa/dc2kit/cmd/dc2kit@latest
 ```
 
-The sibling checkout is temporary. Upstream ships a file named `spec/nul.go`, and Go's module system refuses to package it because `nul` is a reserved filename on Windows. Until that is fixed, `go get` cannot fetch the spec module, so `go.mod` uses a `replace` directive.
+dc2kit tracks the kit spec release named in `go.mod` (currently `v3.0.0-m.13`).
 
 ## What maps to what
 

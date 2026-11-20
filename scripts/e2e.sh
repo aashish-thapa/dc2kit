@@ -5,19 +5,13 @@
 # the fixture's own check.sh inside the image as the agent user.
 #
 # Usage: scripts/e2e.sh [fixture-dir ...]
-# Needs Docker with buildx, Go, and a sandbox-kit-spec checkout at
-# ../sandbox-kit-spec (override with SPEC_DIR).
+# Needs Docker with buildx, and Go. kit-tck is a go.mod tool, so it runs at
+# the same spec version dc2kit validates against.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-spec_dir=${SPEC_DIR:-$root/../sandbox-kit-spec}
 builder=${BUILDER:-dc2kit-e2e}
 fixtures_dir=$root/testdata/e2e
-
-if [ ! -d "$spec_dir/cmd/kit-tck" ]; then
-  echo "e2e: no sandbox-kit-spec checkout at $spec_dir (set SPEC_DIR)" >&2
-  exit 2
-fi
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
@@ -29,7 +23,7 @@ if ! docker buildx inspect "$builder" >/dev/null 2>&1; then
 fi
 
 (cd "$root" && go build -o "$work/dc2kit" ./cmd/dc2kit)
-(cd "$spec_dir" && go build -o "$work/kit-tck" ./cmd/kit-tck)
+(cd "$root" && go build -o "$work/kit-tck" github.com/docker/sandbox-kit-spec/v3/cmd/kit-tck)
 
 if [ "$#" -gt 0 ]; then
   fixtures=("$@")
