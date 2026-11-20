@@ -292,10 +292,18 @@ func parseHostRequirements(v node) (HostRequirements, error) {
 	for _, m := range v.members {
 		switch m.key {
 		case "cpus":
-			if m.value.kind != kindNumber {
+			// The schema says integer, but Codespaces also accepts "4", and
+			// real configs use it.
+			var text string
+			switch m.value.kind {
+			case kindNumber:
+				text = m.value.num.String()
+			case kindString:
+				text = m.value.str
+			default:
 				return HostRequirements{}, fmt.Errorf("cpus must be a number")
 			}
-			cpus, err := strconv.Atoi(m.value.num.String())
+			cpus, err := strconv.Atoi(text)
 			if err != nil || cpus < 1 {
 				return HostRequirements{}, fmt.Errorf("cpus must be a positive integer")
 			}

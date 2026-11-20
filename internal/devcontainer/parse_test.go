@@ -91,3 +91,18 @@ func TestParseRecordsUnmappedKeys(t *testing.T) {
 		t.Fatalf("unmapped = %s", got)
 	}
 }
+
+func TestParseAcceptsCPUsAsNumberOrNumericString(t *testing.T) {
+	for _, cpus := range []string{`4`, `"4"`} {
+		cfg, err := Parse([]byte(`{"image":"x","hostRequirements":{"cpus":` + cpus + `}}`))
+		if err != nil {
+			t.Fatalf("cpus %s: %v", cpus, err)
+		}
+		if cfg.HostRequirements.CPUs != 4 {
+			t.Fatalf("cpus %s parsed as %d", cpus, cfg.HostRequirements.CPUs)
+		}
+	}
+	if _, err := Parse([]byte(`{"image":"x","hostRequirements":{"cpus":"four"}}`)); err == nil {
+		t.Fatal("a non-numeric cpus string must be refused")
+	}
+}
