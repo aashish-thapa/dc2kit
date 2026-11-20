@@ -1,0 +1,30 @@
+# Public repos whose devcontainer.json dc2kit is checked against.
+# One owner/name per line; scripts/compat.sh writes docs/compatibility.md.
+Azure/azure-sdk-for-python
+apache/airflow
+apache/superset
+astral-sh/ruff
+cli/cli
+containerd/containerd
+denoland/deno
+discourse/discourse
+dotnet/aspnetcore
+dotnet/runtime
+github/docs
+github/linguist
+home-assistant/core
+jupyterlab/jupyterlab
+langchain-ai/langchain
+mastodon/mastodon
+microsoft/TypeScript
+microsoft/fluentui
+microsoft/semantic-kernel
+microsoft/vscode
+microsoft/vscode-python
+moby/moby
+n8n-io/n8n
+python/cpython
+rails/rails
+scikit-learn/scikit-learn
+streamlit/streamlit
+vercel/next.js
