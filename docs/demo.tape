@@ -4,24 +4,25 @@ Output docs/demo.gif
 
 Set Shell bash
 Set FontSize 16
-Set Width 1200
-Set Height 720
+Set Width 1440
+Set Height 680
+Set Padding 24
 Set Theme "Catppuccin Mocha"
-Set TypingSpeed 40ms
+Set TypingSpeed 45ms
 
 Hide
-Type "export PS1='$ ' && rm -rf /tmp/dc2kit-demo && cp -R testdata/e2e/node-app /tmp/dc2kit-demo && cd /tmp/dc2kit-demo && clear"
+Type "export PS1='$ ' && rm -rf /tmp/dc2kit-demo && cp -R docs/demo /tmp/dc2kit-demo && cd /tmp/dc2kit-demo && clear"
 Enter
 Show
 
-Type "cat .devcontainer/devcontainer.json | head -12"
+Type "cat .devcontainer/devcontainer.json"
 Enter
-Sleep 3s
+Sleep 4s
 
-Type "dc2kit ."
+Type "clear && dc2kit ."
 Enter
-Sleep 8s
+Sleep 10s
 
-Type "head -30 sbx-kit/node-app.yaml"
+Type "clear && sed -n '/lifecycle@1/,/container:/p' sbx-kit/web-app.yaml"
 Enter
-Sleep 5s
+Sleep 6s

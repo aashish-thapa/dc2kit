@@ -1,0 +1,12 @@
+{
+  "name": "Web App",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "remoteUser": "vscode",
+  "forwardPorts": [3000],
+  "postCreateCommand": "npm ci",
+  "postAttachCommand": "npm run dev"
+}

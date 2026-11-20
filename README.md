@@ -2,6 +2,8 @@
 
 Turn a `devcontainer.json` into a [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) kit, so a coding agent runs in the same environment your editor already uses.
 
+![dc2kit converting a Node devcontainer into a sandbox kit](docs/demo.gif)
+
 ```console
 $ dc2kit -o sbx-kit .
 fetching feature ghcr.io/devcontainers/features/node:1
