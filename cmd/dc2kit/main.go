@@ -261,6 +261,12 @@ func resolveFeatures(ctx context.Context, r feature.Resolver, cfg devcontainer.C
 		}
 		resolved = append(resolved, f)
 	}
+	resolved, err := feature.WithDependencies(ctx, r, resolved, func(req devcontainer.FeatureRequest) {
+		fmt.Fprintf(stderr, "fetching feature %s (a dependency)\n", req.Ref)
+	})
+	if err != nil {
+		return nil, err
+	}
 	return feature.Order(resolved, cfg.OverrideFeatureInstallOrder)
 }
 

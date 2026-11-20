@@ -181,6 +181,16 @@ func parseBuild(v node) (*Build, error) {
 	return b, nil
 }
 
+// ParseFeatureRequests reads a JSON object shaped like "features", such as
+// a Feature's dependsOn, with the same option rules as devcontainer.json.
+func ParseFeatureRequests(data []byte) ([]FeatureRequest, error) {
+	v, err := decodeOrdered(data)
+	if err != nil {
+		return nil, err
+	}
+	return parseFeatures(v)
+}
+
 func parseFeatures(v node) ([]FeatureRequest, error) {
 	if v.kind != kindObject {
 		return nil, fmt.Errorf("must be an object, got %s", v.kind)

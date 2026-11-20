@@ -33,7 +33,7 @@ func Order(features []Feature, override []string) ([]Feature, error) {
 		for dep := range f.Metadata.DependsOn {
 			j, ok := byKey[NormalizeKey(dep)]
 			if !ok {
-				return nil, fmt.Errorf("feature %q depends on %q; add it to \"features\" explicitly", f.Request.Ref, dep)
+				return nil, fmt.Errorf("feature %q depends on %q, which was not resolved", f.Request.Ref, dep)
 			}
 			after[j] = append(after[j], i)
 			pending[i]++
