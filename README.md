@@ -41,7 +41,7 @@ dc2kit tracks the kit spec release named in `go.mod` (currently `v3.0.0-m.13`).
 | `forwardPorts` | `port@1` (Compose `service:port` entries are skipped) |
 | `hostRequirements` | `resources@1` |
 | `privileged`, privileged features | `privileged@1` |
-| `docker-in-docker` feature | `privileged@1` plus the label `sbx` uses to start the in-sandbox engine |
+| `docker-in-docker` feature | `dockerd@1` (optional), with `privileged@1` and the `start-docker` label as the fallback older `sbx` releases use |
 | `${containerWorkspaceFolder}` | `$WORKSPACE_DIR` in hooks, `/home/agent/workspace` in `ENV` |
 | `${localEnv:…}`, `${localWorkspaceFolder}` | the stated default or empty, with a warning; a kit never reads the host |
 | `mounts`, `capAdd`, `runArgs`, `customizations`, `initializeCommand` | reported, not translated |

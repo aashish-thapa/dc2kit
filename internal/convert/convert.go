@@ -157,6 +157,15 @@ func (d *draft) descriptor(in Input) (kit.Descriptor, error) {
 	desc.SourceURL = in.Options.SourceURL
 	desc.Version = "0.1.0"
 
+	if d.image.StartsDocker {
+		// Optional so runtimes that predate dockerd@1 skip it and fall back
+		// to privileged@1 plus the start-docker image label.
+		desc.Capabilities = append(desc.Capabilities, kit.Capability{
+			Type:        kit.TypeDockerd,
+			Optional:    true,
+			Description: "Builds and runs containers with the in-sandbox engine",
+		})
+	}
 	if len(d.privileged) > 0 {
 		desc.Capabilities = append(desc.Capabilities, kit.Capability{
 			Type:        kit.TypePrivileged,

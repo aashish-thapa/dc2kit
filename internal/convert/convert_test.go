@@ -44,6 +44,14 @@ func TestEveryConversionPassesTheKitSpec(t *testing.T) {
 		opts     convert.Options
 	}{
 		"bare image": {doc: `{"image":"ubuntu:24.04"}`},
+		"docker in docker": {
+			doc: `{"image":"ubuntu:24.04"}`,
+			features: []feature.Feature{{
+				Request:  devcontainer.FeatureRequest{Ref: "ghcr.io/devcontainers/features/docker-in-docker:2"},
+				Key:      "ghcr.io/devcontainers/features/docker-in-docker",
+				Metadata: feature.Metadata{ID: "docker-in-docker", Privileged: true},
+			}},
+		},
 		"everything": {
 			doc: `{
 				"name": "Full",

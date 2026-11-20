@@ -22,6 +22,7 @@ const (
 	TypePort          = "com.docker.sandbox/port@1"
 	TypeResources     = "com.docker.sandbox/resources@1"
 	TypePrivileged    = "com.docker.sandbox/privileged@1"
+	TypeDockerd       = "com.docker.sandbox/dockerd@1"
 	TypeAgentContext1 = "com.docker.sandbox/agent-context@1"
 	TypeAgentContext2 = "com.docker.sandbox/agent-context@2"
 )
