@@ -7,6 +7,7 @@ import (
 
 	"github.com/aashish-thapa/dc2kit/internal/convert"
 	"github.com/aashish-thapa/dc2kit/internal/devcontainer"
+	"github.com/aashish-thapa/dc2kit/internal/dockerfile"
 	"github.com/aashish-thapa/dc2kit/internal/feature"
 	"github.com/aashish-thapa/dc2kit/internal/kit"
 	"github.com/aashish-thapa/dc2kit/internal/render"
@@ -75,12 +76,20 @@ func TestEveryConversionPassesTheKitSpec(t *testing.T) {
 			doc:  `{"build":{"dockerfile":"Dockerfile"}}`,
 			opts: convert.Options{BaseImage: "ghcr.io/me/dev@sha256:" + strings.Repeat("a", 64)},
 		},
+		"build from the project Dockerfile": {
+			doc:      `{"build":{"dockerfile":"Dockerfile","context":"..","args":{"VARIANT":"22","NODE_ENV":"dev"}}}`,
+			features: []feature.Feature{nodeFeature()},
+			opts:     convert.Options{UserDockerfile: userDockerfile(t)},
+		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			plan, _, err := convert.Convert(convert.Input{Config: parse(t, tc.doc), Features: tc.features, Options: tc.opts})
 			if err != nil {
 				t.Fatal(err)
+			}
+			if plan.Image.Prelude != nil {
+				plan.Descriptor.Dockerfile = render.InContext("ctx").DockerfileRef("app")
 			}
 			raw, err := kit.Marshal(plan.Descriptor, "test")
 			if err != nil {
@@ -90,6 +99,54 @@ func TestEveryConversionPassesTheKitSpec(t *testing.T) {
 				t.Fatalf("spec rejected the descriptor: %v\n%s", err, raw)
 			}
 		})
+	}
+}
+
+func userDockerfile(t *testing.T) *dockerfile.Base {
+	t.Helper()
+	base, err := dockerfile.Prepare([]byte("ARG VARIANT\nFROM node:${VARIANT}\nCOPY tools/ /opt/tools/\n"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &base
+}
+
+func TestBuildConfigsBuildOnTheProjectDockerfile(t *testing.T) {
+	cfg := parse(t, `{"build":{"dockerfile":"Dockerfile","args":{"VARIANT":"22","NODE_ENV":"dev"}}}`)
+	plan, _, err := convert.Convert(convert.Input{Config: cfg, Options: convert.Options{UserDockerfile: userDockerfile(t)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := plan.Descriptor.Args
+	if args["VARIANT"] != (kit.Arg{Default: "22", BuildArg: "VARIANT", Description: "devcontainer build arg VARIANT"}) {
+		t.Fatalf("VARIANT arg = %+v", args["VARIANT"])
+	}
+	if len(args) != 2 || args["NODE_ENV"].Default != "dev" {
+		t.Fatalf("args = %+v", args)
+	}
+
+	// The kit spec cannot carry a non-identifier build arg at all; the
+	// conversion must say so instead of emitting a kit the frontend refuses.
+	bad := parse(t, `{"build":{"dockerfile":"Dockerfile","args":{"node-env":"dev"}}}`)
+	if _, _, err := convert.Convert(convert.Input{Config: bad, Options: convert.Options{UserDockerfile: userDockerfile(t)}}); err == nil ||
+		!strings.Contains(err.Error(), "rename the ARG") {
+		t.Fatalf("want a rename hint, got %v", err)
+	}
+
+	layout := render.InContext("ctx")
+	got := render.Dockerfile(plan.Image, layout, "test")
+	for _, want := range []string{
+		"FROM node:${VARIANT} AS " + dockerfile.DefaultStage + "\n",
+		"COPY tools/ /opt/tools/\n",
+		"\nFROM " + dockerfile.DefaultStage + "\n",
+		"COPY --chmod=0755 .sbx-kit/sbx-floor.sh ",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("Dockerfile lacks %q\n%s", want, got)
+		}
+	}
+	if !strings.HasPrefix(got, "# syntax=docker/dockerfile:1\n") {
+		t.Errorf("the syntax directive must be the first line:\n%s", got)
 	}
 }
 
@@ -141,7 +198,7 @@ func TestDockerfileEnvEscaping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dockerfile := render.Dockerfile(plan.Image, "test")
+	dockerfile := render.Dockerfile(plan.Image, render.Standalone("kit"), "test")
 	for _, want := range []string{
 		`ENV LITERAL="pa\$\$w\"o\\rd"`,
 		`ENV EXTENDS="${PATH}:/opt/bin"`,

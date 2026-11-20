@@ -32,19 +32,27 @@ else
 fi
 
 run_fixture() {
-  local fixture=$1 name=$2 out=$3 digest image checks
-  "$work/dc2kit" -o "$out/kit" --name "$name" "$fixture" >"$out/next-steps.txt" 2>"$out/report.txt"
+  local fixture=$1 name=$2 out=$3 digest image checks kit
+  # Work on a copy: a "build" devcontainer's kit is written into the
+  # project's own build context, which must not be testdata/.
+  cp -R "$fixture" "$out/src"
+  (cd "$out/src" && "$work/dc2kit" --name "$name" .) >"$out/next-steps.txt" 2>"$out/report.txt"
+  if [ -f "$out/src/$name.yaml" ]; then
+    kit=$out/src
+  else
+    kit=$out/src/sbx-kit
+  fi
 
   docker buildx build --builder "$builder" --quiet \
-    -f "$out/kit/$name.yaml" \
+    -f "$kit/$name.yaml" \
     --output "type=oci,dest=$out/layout,tar=false" \
     --metadata-file "$out/metadata.json" \
-    "$out/kit" >/dev/null
+    "$kit" >/dev/null
   digest=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["containerimage.digest"])' "$out/metadata.json")
   "$work/kit-tck" validate --layout "$out/layout" "$digest"
 
   image=dc2kit-e2e:$name
-  docker buildx build --builder "$builder" --quiet -f "$out/kit/$name.yaml" -t "$image" --load "$out/kit" >/dev/null
+  docker buildx build --builder "$builder" --quiet -f "$kit/$name.yaml" -t "$image" --load "$kit" >/dev/null
   checks=("$fixtures_dir/platform-checks.sh")
   [ -f "$fixture/check.sh" ] && checks+=("$fixture/check.sh")
   cat "${checks[@]}" | docker run --rm -i "$image" -s

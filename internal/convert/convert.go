@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/aashish-thapa/dc2kit/internal/devcontainer"
+	"github.com/aashish-thapa/dc2kit/internal/dockerfile"
 	"github.com/aashish-thapa/dc2kit/internal/feature"
 	"github.com/aashish-thapa/dc2kit/internal/kit"
 )
@@ -40,6 +41,10 @@ type Options struct {
 	RuntimeAllow  []string
 	InstallEgress InstallEgress
 	SourceURL     string
+	// UserDockerfile is the devcontainer's own Dockerfile, prepared, for
+	// configs that use "build". The caller reads it because only the
+	// caller knows where the file lives.
+	UserDockerfile *dockerfile.Base
 }
 
 // Input is everything a conversion reads. Features must already be in
@@ -57,8 +62,10 @@ type Plan struct {
 	Image      ImagePlan
 }
 
-// ImagePlan is what the companion Dockerfile must build.
+// ImagePlan is what the companion Dockerfile must build. With a Prelude,
+// BaseImage names the Prelude's stage rather than a registry image.
 type ImagePlan struct {
+	Prelude      *dockerfile.Base
 	BaseImage    string
 	Features     []FeatureStep
 	Env          []ImageEnv
@@ -116,6 +123,7 @@ var rules = []rule{
 // draft accumulates capability contributions until every rule has run.
 type draft struct {
 	image        ImagePlan
+	args         map[string]kit.Arg
 	lifecycle    kit.LifecycleConfig
 	ports        []int
 	resources    *kit.ResourcesConfig
@@ -153,9 +161,10 @@ func (d *draft) descriptor(in Input) (kit.Descriptor, error) {
 	if desc.DisplayName == "" {
 		desc.DisplayName = "Dev container"
 	}
-	desc.Description = fmt.Sprintf("Sandbox workload converted from devcontainer.json (base %s).", d.image.BaseImage)
+	desc.Description = fmt.Sprintf("Sandbox workload converted from devcontainer.json, %s.", d.baseSummary())
 	desc.SourceURL = in.Options.SourceURL
 	desc.Version = "0.1.0"
+	desc.Args = d.args
 
 	if d.image.StartsDocker {
 		// Optional so runtimes that predate dockerd@1 skip it and fall back
@@ -198,6 +207,14 @@ func (d *draft) descriptor(in Input) (kit.Descriptor, error) {
 		)
 	}
 	return desc, nil
+}
+
+// baseSummary says what the workload is built on, for human-facing text.
+func (d *draft) baseSummary() string {
+	if d.image.Prelude != nil {
+		return "built from the project's devcontainer Dockerfile"
+	}
+	return "on base image `" + d.image.BaseImage + "`"
 }
 
 func (d *draft) networkPolicy() *kit.NetworkPolicyConfig {

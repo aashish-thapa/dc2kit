@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aashish-thapa/dc2kit/internal/devcontainer"
+	"github.com/aashish-thapa/dc2kit/internal/kit"
 )
 
 // baseImageRule picks the image the workload builds FROM.
@@ -23,14 +24,45 @@ func (baseImageRule) apply(in Input, d *draft, report *Report) error {
 		if cfg.Build != nil {
 			report.info("build", "using --base-image %s in place of building %s", in.Options.BaseImage, cfg.Build.Dockerfile)
 		}
+	case cfg.Build != nil && in.Options.UserDockerfile != nil:
+		d.image.Prelude = in.Options.UserDockerfile
+		d.image.BaseImage = in.Options.UserDockerfile.Stage
+		if err := declareBuildArgs(cfg.Build.Args, d, report); err != nil {
+			return err
+		}
+		return nil
 	case cfg.Build != nil:
-		return fmt.Errorf("devcontainer.json builds from %s. A kit's build context is the kit directory, so build that image first "+
-			"(docker buildx build -t <ref> --push <context>) and rerun with --base-image <ref>", cfg.Build.Dockerfile)
+		return fmt.Errorf("devcontainer.json builds from %s, which was not supplied; "+
+			"or build and push it yourself and rerun with --base-image <ref>", cfg.Build.Dockerfile)
 	default:
 		d.image.BaseImage = cfg.Image
 	}
 	if !strings.Contains(d.image.BaseImage, "@sha256:") {
 		report.info("image", "%s is a tag, so rebuilding the kit can pick up a different image; pin a digest for reproducible kits", d.image.BaseImage)
+	}
+	return nil
+}
+
+var identifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// declareBuildArgs turns build.args into kit args delivered as build args,
+// so the values devcontainer.json sets stay the defaults and an installer
+// can still override them. The kit spec admits only identifier build-arg
+// names, narrower than Dockerfile ARG; there is no way to pass any other
+// name through a kit, so such a name is refused rather than renamed.
+func declareBuildArgs(args []devcontainer.EnvVar, d *draft, report *Report) error {
+	for _, a := range args {
+		if !identifier.MatchString(a.Name) {
+			return fmt.Errorf("build.args %q: kits pass only build args named like identifiers ([A-Za-z_][A-Za-z0-9_]*); rename the ARG in the Dockerfile", a.Name)
+		}
+		value, unresolved := substituteShell(a.Value)
+		for _, u := range unresolved {
+			report.warn("build.args."+a.Name, "%s has no value inside a sandbox and was replaced with its default or an empty string", u)
+		}
+		if d.args == nil {
+			d.args = map[string]kit.Arg{}
+		}
+		d.args[a.Name] = kit.Arg{Default: value, BuildArg: a.Name, Description: "devcontainer build arg " + a.Name}
 	}
 	return nil
 }

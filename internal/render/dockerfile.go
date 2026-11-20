@@ -19,23 +19,37 @@ const (
 	persistentEnv   = "/etc/sandbox-persistent.sh"
 )
 
-// Dockerfile renders the companion recipe for a plan.
-func Dockerfile(plan convert.ImagePlan, provenance string) string {
+// Dockerfile renders the companion recipe for a plan. With a Prelude, the
+// project's own Dockerfile comes first, verbatim apart from naming its
+// stage, and the recipe builds on that stage.
+func Dockerfile(plan convert.ImagePlan, layout Layout, provenance string) string {
 	var b strings.Builder
-	b.WriteString("# syntax=docker/dockerfile:1\n")
+	if plan.Prelude != nil {
+		for _, line := range plan.Prelude.Header {
+			b.WriteString(line + "\n")
+		}
+	}
+	if plan.Prelude == nil || !plan.Prelude.HasSyntax() {
+		b.WriteString("# syntax=docker/dockerfile:1\n")
+	}
 	for _, line := range strings.Split(provenance, "\n") {
 		b.WriteString("# " + line + "\n")
+	}
+	if plan.Prelude != nil {
+		b.WriteString("\n# --- the project's devcontainer Dockerfile ---\n")
+		b.WriteString(plan.Prelude.Body)
+		b.WriteString("# --- end of the project's Dockerfile ---\n\n")
 	}
 	fmt.Fprintf(&b, "FROM %s\n\n", plan.BaseImage)
 
 	b.WriteString("USER root\n")
-	fmt.Fprintf(&b, "COPY --chmod=0755 %s %s\n", floorScript, floorInImage)
+	fmt.Fprintf(&b, "COPY --chmod=0755 %s %s\n", layout.contextPath(floorScript), floorInImage)
 	fmt.Fprintf(&b, "RUN %s\n", floorInImage)
 
 	for _, step := range plan.Features {
 		stage := featureStageDir + "/" + step.Dir
 		fmt.Fprintf(&b, "\n# Feature %s (%s)\n", step.Ref, step.Pin)
-		fmt.Fprintf(&b, "COPY %s/%s %s\n", featuresDir, step.Dir, stage)
+		fmt.Fprintf(&b, "COPY %s %s\n", layout.contextPath(featuresDir+"/"+step.Dir), stage)
 		fmt.Fprintf(&b, "RUN cd %s \\\n", stage)
 		b.WriteString(" && chmod +x install.sh \\\n")
 		fmt.Fprintf(&b, " && set -a && . ./%s && set +a \\\n", featureEnvFile)

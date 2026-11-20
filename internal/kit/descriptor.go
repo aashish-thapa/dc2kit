@@ -29,13 +29,25 @@ const (
 
 // Descriptor is a workload kit descriptor.
 type Descriptor struct {
-	SchemaVersion string       `yaml:"schemaVersion"`
-	Kind          string       `yaml:"kind"`
-	DisplayName   string       `yaml:"displayName,omitempty"`
-	Description   string       `yaml:"description,omitempty"`
-	SourceURL     string       `yaml:"sourceUrl,omitempty"`
-	Version       string       `yaml:"version,omitempty"`
-	Capabilities  []Capability `yaml:"capabilities,omitempty"`
+	SchemaVersion string         `yaml:"schemaVersion"`
+	Kind          string         `yaml:"kind"`
+	DisplayName   string         `yaml:"displayName,omitempty"`
+	Description   string         `yaml:"description,omitempty"`
+	SourceURL     string         `yaml:"sourceUrl,omitempty"`
+	Version       string         `yaml:"version,omitempty"`
+	Args          map[string]Arg `yaml:"args,omitempty"`
+	Capabilities  []Capability   `yaml:"capabilities,omitempty"`
+	// Dockerfile names the companion recipe when it does not sit beside
+	// the descriptor under the same stem.
+	Dockerfile string `yaml:"dockerfile,omitempty"`
+}
+
+// Arg is one installer-supplied value. Default is always written, even
+// empty, because an empty default is a real default in the spec.
+type Arg struct {
+	Default     string `yaml:"default"`
+	Description string `yaml:"description,omitempty"`
+	BuildArg    string `yaml:"buildArg,omitempty"`
 }
 
 // NewWorkload returns an empty workload descriptor targeting the sandbox

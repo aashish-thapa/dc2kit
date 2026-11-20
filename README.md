@@ -28,7 +28,9 @@ dc2kit tracks the kit spec release named in `go.mod` (currently `v3.0.0-m.13`).
 | devcontainer.json | Kit |
 |---|---|
 | `image` | `FROM` in the companion Dockerfile |
-| `build.dockerfile` | requires `--base-image <ref>`: build and push it first, because a kit's build context is the kit directory |
+| `build.dockerfile`, `build.context` | the kit is written **into the build context**: the descriptor at its root, dc2kit's files under `.sbx-kit/`. Your Dockerfile becomes the first stage, so its `COPY` paths keep working. `--base-image <ref>` builds on a prebuilt image instead |
+| `build.target` | the stage the kit builds on (default: the last stage) |
+| `build.args` | kit args with those defaults, passed as build args; names must be identifiers, a kit-spec rule |
 | `dockerComposeFile` | refused; a sandbox is one workload |
 | `features` (OCI) | fetched at generation time, pinned by manifest digest, vendored under `features/`, and installed in order (`dependsOn`, `installsAfter`, `overrideFeatureInstallOrder`) the way the devcontainer CLI does it |
 | `features` (`./local`) | read from beside `devcontainer.json` |
@@ -54,7 +56,7 @@ Two sandbox rules shape the output and are easy to miss when writing a kit by ha
 ## Flags
 
 ```
--o DIR               output directory (default sbx-kit)
+-o DIR               output directory for image-based configs (default sbx-kit)
 --name STEM          kit file stem (default: from the devcontainer name)
 --base-image REF     build FROM this instead of devcontainer.json's image
 --allow HOST         extra runtime egress host (repeatable)
@@ -74,13 +76,12 @@ scripts/e2e.sh       # needs Docker: builds each testdata/e2e fixture through th
                      # runs platform checks inside the image as the agent user
 ```
 
-The e2e fixtures cover a devcontainer image with features, plus Debian-slim, Alpine and Fedora bases, so the platform-floor script runs against apt, apk and dnf. CI runs both.
+The e2e fixtures cover a devcontainer image with features; a project Dockerfile with a parent build context, a build target, and build args; and Debian-slim, Alpine and Fedora bases, so the platform-floor script runs against apt, apk and dnf. CI runs both.
 
 ## Status
 
-Experimental, like the kit format itself. v1 covers the common `image` + `features` case. Not yet supported:
+Experimental, like the kit format itself. Not yet supported:
 
-- Dockerfile builds without a prebuilt base image
 - Compose-based devcontainers
 - private feature registries
 - tarball-URL features
