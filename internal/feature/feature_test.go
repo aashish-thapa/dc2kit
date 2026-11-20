@@ -185,3 +185,18 @@ func TestSourceResolverRefusesDeprecatedForms(t *testing.T) {
 		}
 	}
 }
+
+// The devcontainer CLI reads devcontainer-feature.json as JSONC; local
+// Features in real repos rely on that.
+func TestMetadataAllowsComments(t *testing.T) {
+	m, err := parseMetadata([]byte(`{
+		"id": "rust", // local wrapper
+		"dependsOn": {"ghcr.io/devcontainers/features/rust:1": {}},
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.ID != "rust" || len(m.DependsOn) != 1 {
+		t.Fatalf("metadata = %+v", m)
+	}
+}

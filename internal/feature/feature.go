@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tailscale/hujson"
+
 	"github.com/aashish-thapa/dc2kit/internal/devcontainer"
 )
 
@@ -61,6 +63,12 @@ type OptionSpec struct {
 const metadataFile = "devcontainer-feature.json"
 
 func parseMetadata(data []byte) (Metadata, error) {
+	// The devcontainer CLI reads this file as JSONC, and local Features in
+	// the wild carry comments.
+	data, err := hujson.Standardize(data)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("%s: %w", metadataFile, err)
+	}
 	var m Metadata
 	if err := json.Unmarshal(data, &m); err != nil {
 		return Metadata{}, fmt.Errorf("%s: %w", metadataFile, err)
