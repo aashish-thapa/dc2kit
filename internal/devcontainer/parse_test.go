@@ -67,7 +67,6 @@ func TestParsePortsSkipsComposeServices(t *testing.T) {
 
 func TestParseRejects(t *testing.T) {
 	for name, doc := range map[string]string{
-		"no base":       `{"name":"x"}`,
 		"two bases":     `{"image":"x","build":{"dockerfile":"Dockerfile"}}`,
 		"bad port":      `{"image":"x","forwardPorts":[70000]}`,
 		"build no file": `{"build":{"context":".."}}`,

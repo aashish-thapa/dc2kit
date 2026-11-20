@@ -120,6 +120,9 @@ var fieldHandlers = map[string]fieldHandler{
 	},
 }
 
+// checkSingleBase rejects configs naming several bases. Naming none is
+// legal: Codespaces then uses its default image, so the converter asks for
+// one instead.
 func checkSingleBase(cfg Config) error {
 	declared := 0
 	for _, isSet := range []bool{cfg.Image != "", cfg.Build != nil, len(cfg.ComposeFiles) > 0} {
@@ -127,14 +130,10 @@ func checkSingleBase(cfg Config) error {
 			declared++
 		}
 	}
-	switch declared {
-	case 0:
-		return fmt.Errorf("devcontainer.json names no base: set one of \"image\", \"build\", or \"dockerComposeFile\"")
-	case 1:
-		return nil
-	default:
+	if declared > 1 {
 		return fmt.Errorf("devcontainer.json names more than one of \"image\", \"build\", and \"dockerComposeFile\"")
 	}
+	return nil
 }
 
 func stringInto(field func(*Config) *string) fieldHandler {

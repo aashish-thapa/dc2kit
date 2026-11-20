@@ -34,6 +34,9 @@ func (baseImageRule) apply(in Input, d *draft, report *Report) error {
 	case cfg.Build != nil:
 		return fmt.Errorf("devcontainer.json builds from %s, which was not supplied; "+
 			"or build and push it yourself and rerun with --base-image <ref>", cfg.Build.Dockerfile)
+	case cfg.Image == "":
+		return fmt.Errorf("devcontainer.json names no \"image\", \"build\", or \"dockerComposeFile\" (Codespaces fills in its default image); " +
+			"pass --base-image, for example --base-image mcr.microsoft.com/devcontainers/universal:2")
 	default:
 		d.image.BaseImage = cfg.Image
 	}

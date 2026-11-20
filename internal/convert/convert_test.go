@@ -45,6 +45,10 @@ func TestEveryConversionPassesTheKitSpec(t *testing.T) {
 		opts     convert.Options
 	}{
 		"bare image": {doc: `{"image":"ubuntu:24.04"}`},
+		"no base, given one": {
+			doc:  `{"remoteUser":"codespace","postCreateCommand":"make"}`,
+			opts: convert.Options{BaseImage: "mcr.microsoft.com/devcontainers/universal:2"},
+		},
 		"docker in docker": {
 			doc: `{"image":"ubuntu:24.04"}`,
 			features: []feature.Feature{{
@@ -154,6 +158,7 @@ func TestUnsupportedBasesFailWithGuidance(t *testing.T) {
 	for name, doc := range map[string]string{
 		"compose":           `{"dockerComposeFile":"compose.yml","service":"app"}`,
 		"build without ref": `{"build":{"dockerfile":"Dockerfile"}}`,
+		"no base at all":    `{"name":"codespaces default"}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, _, err := convert.Convert(convert.Input{Config: parse(t, doc)})
