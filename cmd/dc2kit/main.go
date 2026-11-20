@@ -254,6 +254,10 @@ func findConfig(target string) (string, error) {
 func resolveFeatures(ctx context.Context, r feature.Resolver, cfg devcontainer.Config, stderr io.Writer) ([]feature.Feature, error) {
 	resolved := make([]feature.Feature, 0, len(cfg.Features))
 	for _, req := range cfg.Features {
+		if ref, isLegacy := feature.LegacyRef(req.Ref); isLegacy {
+			fmt.Fprintf(stderr, "warn  features.%s: deprecated short ID; installing %s, as the devcontainer CLI does\n", req.Ref, ref)
+			req.Ref = ref
+		}
 		fmt.Fprintf(stderr, "fetching feature %s\n", req.Ref)
 		f, err := r.Resolve(ctx, req)
 		if err != nil {
