@@ -1,0 +1,22 @@
+// A typical Node project devcontainer: comments and trailing commas are legal.
+{
+  "name": "Node App",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+  },
+  "containerEnv": {
+    "APP_ENV": "development",
+    "LITERAL": "pa$$word",
+    "TOOLS": "${containerEnv:HOME}/tools",
+  },
+  "remoteUser": "vscode",
+  "forwardPorts": [3000, "localhost:9229", "db:5432"],
+  "postCreateCommand": "npm ci",
+  "postStartCommand": ["npm", "run", "dev:prepare"],
+  "postAttachCommand": "echo attached",
+  "hostRequirements": { "cpus": 4, "memory": "8gb" },
+  "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint"] } },
+}

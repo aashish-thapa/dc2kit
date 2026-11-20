@@ -1,0 +1,5 @@
+{
+  "name": "debian-slim",
+  "image": "python:3.12-slim",
+  "postCreateCommand": "git --version"
+}

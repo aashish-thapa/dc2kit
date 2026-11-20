@@ -1,0 +1,5 @@
+{
+  "name": "alpine",
+  "image": "alpine:3.20",
+  "postCreateCommand": "git --version"
+}

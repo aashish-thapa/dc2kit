@@ -1,0 +1,5 @@
+{
+  "name": "fedora",
+  "image": "fedora:41",
+  "postCreateCommand": "git --version"
+}
