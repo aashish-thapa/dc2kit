@@ -37,6 +37,7 @@ type cliFlags struct {
 	allow         multiFlag
 	force         bool
 	timeout       time.Duration
+	version       bool
 }
 
 type multiFlag []string
@@ -56,11 +57,16 @@ func run(args []string, stdout, stderr io.Writer) error {
 	fs.Var(&f.allow, "allow", "extra runtime egress host (repeatable)")
 	fs.BoolVar(&f.force, "force", false, "regenerate an existing dc2kit output directory")
 	fs.DurationVar(&f.timeout, "timeout", 2*time.Minute, "time limit for fetching features")
+	fs.BoolVar(&f.version, "version", false, "print the dc2kit version and exit")
 	fs.Usage = func() {
 		fmt.Fprintln(stderr, "usage: dc2kit [flags] [devcontainer.json | project dir]")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if f.version {
+		_, err := fmt.Fprintln(stdout, "dc2kit", buildVersion())
 		return err
 	}
 	if fs.NArg() > 1 {
